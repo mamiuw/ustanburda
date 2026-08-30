@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ustanburda.ai - Akıllı Araç Arıza Teşhis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['"Outfit"', 'sans-serif'] },
+                    colors: {
+                        primary: '#0ea5e9',
+                        secondary: '#3b82f6',
+                        dark: '#0f172a',
+                        surface: '#1e293b'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #f1f5f9; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+        }
+        .item-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .item-card:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 20px -5px rgba(14, 165, 233, 0.25);
+            border-color: #0ea5e9;
+            background-color: #f0f9ff;
+        }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <nav class="glass-panel sticky top-0 z-50 border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="resetApp()">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-secondary to-primary flex items-center justify-center text-white shadow-lg shadow-primary/30">
+                    <i class="fa-solid fa-microchip text-xl"></i>
+                </div>
+                <span class="text-2xl font-extrabold tracking-tight text-dark">
+                    ustanburda<span class="text-primary">.ai</span>
+                </span>
+            </div>
+            <div class="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
+                <span class="relative flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span></span>
+                <span class="text-xs font-bold text-emerald-700 tracking-wide">MEGA VERİTABANI AKTİF</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <div class="text-center mb-8 fade-in">
+            <h1 class="text-4xl font-extrabold text-dark mb-3">
+                Yapay Zeka ile <span class="text-transparent bg-clip-text bg-gradient-to-r from-secondary to-primary">Tam Nokta Atışı</span> Teşhis
+            </h1>
+            <p class="text-slate-500 text-md max-w-2xl mx-auto font-medium">
+                Aracınızı seçin, şikayetinizi yazın, ustanburda.ai arızayı ve ortalama maliyeti çıkarsın.
+            </p>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-6 md:p-8 fade-in">
+            
+            <div class="flex flex-wrap items-center gap-2 mb-6 text-sm font-semibold text-slate-400 pb-4 border-b border-slate-100">
+                <button onclick="resetApp()" class="flex items-center gap-2 text-primary hover:text-secondary transition px-4 py-2 bg-sky-50 rounded-lg">
+                    <i class="fa-solid fa-car"></i> Marka
+                </button>
+                <span id="bc-model-wrap" class="hidden flex items-center gap-2">
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                    <span class="px-4 py-2 bg-slate-100 rounded-lg text-slate-700" id="bc-brand"></span>
+                </span>
+                <span id="bc-engine-wrap" class="hidden flex items-center gap-2">
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                    <span class="px-4 py-2 bg-slate-100 rounded-lg text-slate-700" id="bc-model"></span>
+                </span>
+            </div>
+
+            <div id="selection-area">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+                    <h2 id="step-title" class="text-xl font-bold text-dark flex items-center gap-2">
+                        <i class="fa-solid fa-magnifying-glass text-primary"></i> Marka Seçiniz
+                    </h2>
+                    <div id="search-container" class="relative w-full sm:w-80">
+                        <input type="text" id="searchInput" onkeyup="filterItems()" placeholder="Marka veya model ara..." class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition">
+                        <i class="fa-solid fa-search absolute left-4 top-3.5 text-slate-400"></i>
+                    </div>
+                </div>
+                
+                <div id="grid-container" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 custom-scroll max-h-[65vh] overflow-y-auto p-1">
+                    <!-- Dinamik İçerik -->
+                </div>
+            </div>
+
+            <div id="diagnostic-area" class="hidden fade-in">
+                <div class="bg-dark rounded-xl p-6 mb-8 text-white shadow-xl flex justify-between items-center bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
+                    <div>
+                        <p class="text-primary text-xs font-bold uppercase tracking-wider mb-2">Seçili Araç Profili</p>
+                        <h3 class="text-2xl font-extrabold" id="final-car-name"></h3>
+                    </div>
+                    <button onclick="resetApp()" class="w-12 h-12 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center transition border border-white/10">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-5 max-w-4xl mx-auto">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Aracınızdaki Sorun Nedir? (Detaylı Yazın)</label>
+                        <textarea id="problemText" rows="4" class="w-full bg-white border-2 border-slate-200 rounded-xl p-4 text-slate-700 focus:ring-0 focus:border-primary transition resize-none text-lg shadow-sm" placeholder="Örn: Aracımın OBD ekranında P0171 kodu verdi, rölantide dalgalanma yapıyor..."></textarea>
+                    </div>
+                    
+                    <button onclick="analyzeWithAI()" id="ai-btn" class="w-full bg-gradient-to-r from-dark to-slate-800 hover:from-primary hover:to-secondary text-white font-bold text-lg py-4 rounded-xl shadow-lg transition-all duration-300 flex justify-center items-center gap-3">
+                        <i class="fa-solid fa-robot"></i> Gemini 1.5 ile Arızayı Çözümle
+                    </button>
+                </div>
+            </div>
+
+            <div id="result-area" class="hidden mt-8 fade-in max-w-4xl mx-auto">
+                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xl">
+                    <div class="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+                        <h3 class="font-bold text-dark flex items-center gap-2">
+                            <i class="fa-solid fa-file-medical text-primary"></i> Dijital Arıza Raporu
+                        </h3>
+                    </div>
+                    <div id="ai-response" class="p-6 prose prose-slate max-w-none text-slate-700"></div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // DEVASA VERİTABANI BAŞLANGICI
+        const carDatabase = {
+            "Abarth": { models: { "595": ["1.4 T-Jet 145hp", "1.4 T-Jet 165hp Turismo", "1.4 T-Jet 180hp Competizione"], "695": ["1.4 T-Jet Rivale", "1.4 T-Jet Biposto"] } },
+            "Alfa Romeo": { models: { "Giulia": ["2.0 Veloce", "2.9 V6 Quadrifoglio", "2.2 JTD"], "Stelvio": ["2.0 Q4", "2.9 V6", "2.2 JTD"], "Tonale": ["1.5 MHEV", "1.3 PHEV Q4"], "Giulietta": ["1.6 JTDm", "1.4 TB MultiAir", "1.75 TBi Quadrifoglio Verde"] } },
+            "Aston Martin": { models: { "DB11": ["4.0 V8", "5.2 V12 AMR"], "Vantage": ["4.0 V8 Twin-Turbo"], "DBX": ["4.0 V8", "DBX707"], "DBS Superleggera": ["5.2 V12 Twin-Turbo"] } },
+            "Audi": { models: { "A1": ["30 TFSI", "35 TFSI"], "A3": ["35 TFSI", "30 TDI", "S3", "RS3"], "A4": ["40 TDI", "45 TFSI", "RS4 Avant", "2.0 TDI Quattro"], "A5": ["40 TDI", "45 TFSI", "RS5"], "A6": ["40 TDI", "45 TFSI", "50 TDI Quattro", "RS6 Avant"], "A7": ["50 TDI", "55 TFSI", "RS7 Sportback 4.0 TFSI V8 Performance"], "A8": ["50 TDI", "S8 4.0 TFSI V8"], "Q2": ["35 TFSI"], "Q3": ["35 TFSI", "RS Q3"], "Q5": ["40 TDI", "SQ5"], "Q7": ["50 TDI", "SQ7"], "Q8": ["50 TDI", "RSQ8"], "RS7": ["4.0 TFSI V8", "Performance (630 bg)"], "R8": ["5.2 V10 FSI", "V10 Performance"] } },
+            "Bentley": { models: { "Continental GT": ["4.0 V8", "6.0 W12"], "Bentayga": ["4.0 V8", "6.0 W12 Speed"], "Flying Spur": ["4.0 V8", "2.9 V6 Hybrid"] } },
+            "BMW": { models: { "1 Serisi": ["116d", "118i", "120d", "128ti", "M135i xDrive"], "2 Serisi": ["218i Gran Coupe", "M240i", "M2 Competition"], "3 Serisi": ["318i", "320i", "320d", "330i", "M340i", "M3 Competition"], "4 Serisi": ["420i", "430i", "M440i", "M4 Competition 3.0 TwinPower Turbo"], "5 Serisi": ["520i", "520d", "530i xDrive", "M550i", "M5 CS"], "7 Serisi": ["740d xDrive", "750e xDrive", "i7 xDrive60"], "8 Serisi": ["840i", "M850i", "M8 Competition"], "X1": ["sDrive18i", "xDrive20d", "iX1"], "X3": ["sDrive20i", "xDrive20d", "X3 M"], "X5": ["xDrive30d", "xDrive40i", "X5 M Competition"], "X7": ["xDrive40d", "M60i"], "Z4": ["sDrive20i", "M40i"] } },
+            "Cadillac": { models: { "Escalade": ["6.2L V8", "3.0L Duramax Turbo Diesel", "V-Series 6.2L Supercharged"], "CT4": ["2.0L Turbo", "2.7L Dual-Volute Turbo", "CT4-V Blackwing"], "CT5": ["2.0L Turbo", "3.0L Twin-Turbo", "CT5-V Blackwing 6.2L V8"], "XT5": ["2.0L Turbo", "3.6L V6"] } },
+            "Chery": { models: { "Tiggo 7 Pro": ["1.6 TGDI Comfort", "1.6 TGDI Luxury", "1.6 TGDI Excellent"], "Tiggo 8 Pro": ["1.6 TGDI Luxury", "1.6 TGDI Excellent", "1.5 PHEV e+"], "Omoda 5": ["1.6 TGDI Comfort", "1.6 TGDI Luxury", "1.6 TGDI Excellent"] } },
+            "Chevrolet": { models: { "Camaro": ["2.0 Turbo", "3.6 V6", "6.2 V8 SS", "ZL1 6.2 Supercharged"], "Corvette": ["Stingray 6.2 V8", "Z06 5.5 V8", "E-Ray"], "Tahoe": ["5.3 V8", "6.2 V8", "3.0 Duramax Diesel"], "Cruze": ["1.6", "1.4 Turbo", "1.6 Dizel", "2.0 VCDi"] } },
+            "Citroen": { models: { "C-Elysee": ["1.2 PureTech", "1.5 BlueHDi", "1.6 HDi"], "C3": ["1.2 PureTech 83hp", "1.2 PureTech 110hp"], "C3 Aircross": ["1.2 PureTech", "1.5 BlueHDi"], "C4": ["1.2 PureTech", "1.5 BlueHDi", "e-C4 100kW"], "C5 Aircross": ["1.5 BlueHDi", "1.6 PureTech", "1.6 Plug-in Hybrid"] } },
+            "Dacia": { models: { "Duster": ["1.0 TCe", "1.3 TCe 150hp", "1.5 Blue dCi", "1.0 ECO-G LPG"], "Sandero": ["1.0 SCe", "1.0 TCe", "1.0 ECO-G LPG"], "Jogger": ["1.0 TCe", "1.0 ECO-G", "1.6 Hybrid"] } },
+            "Ferrari": { models: { "F8 Tributo": ["3.9 V8 Twin-Turbo"], "Roma": ["3.9 V8"], "SF90 Stradale": ["4.0 V8 PHEV"], "296 GTB": ["3.0 V6 PHEV"], "Purosangue": ["6.5 V12"] } },
+            "Fiat": { models: { "Egea": ["1.4 Fire 95hp", "1.3 Multijet 95hp", "1.6 Multijet 130hp", "1.5 T4 Hibrit 130hp", "1.6 E-Torq"], "Fiorino": ["1.3 Multijet", "1.4 Fire"], "Doblo": ["1.3 Multijet", "1.6 Multijet", "1.5 BlueHDi (Yeni Nesil)"], "500": ["1.0 Hybrid", "Elektrikli (42 kWh)"], "Punto": ["1.4 Fire", "1.3 Multijet"], "Linea": ["1.3 Multijet", "1.6 Multijet", "1.4 Fire"] } },
+            "Ford": { models: { "Focus": ["1.0 EcoBoost", "1.5 EcoBlue Dizel", "1.6 Ti-VCT", "1.6 TDCi", "2.3 EcoBoost ST"], "Fiesta": ["1.4 TDCi", "1.25i", "1.0 EcoBoost", "1.5 TDCi"], "Puma": ["1.0 EcoBoost mHEV"], "Kuga": ["1.5 EcoBoost", "1.5 EcoBlue", "2.5 PHEV"], "Mustang": ["2.3 EcoBoost", "5.0 V8 GT", "Mach-E (Elektrikli)"], "Ranger": ["2.0 EcoBlue", "3.0 V6 Raptor"], "Tourneo Courier": ["1.5 TDCi", "1.6 TDCi"] } },
+            "Honda": { models: { "Civic": ["1.6 i-VTEC", "1.6 i-VTEC (LPG)", "1.5 VTEC Turbo", "1.6 i-DTEC", "e:HEV 2.0 Hybrid"], "Accord": ["1.5 VTEC Turbo", "2.0 e:HEV"], "CR-V": ["1.6 i-DTEC", "1.5 VTEC Turbo", "e:HEV 2.0 Hybrid"], "HR-V": ["1.5 e:HEV Hybrid"], "Type R": ["2.0 VTEC Turbo (FK8)", "2.0 VTEC Turbo (FL5)"] } },
+            "Hyundai": { models: { "i10": ["1.0 MPI", "1.2 MPI"], "i20": ["1.4 MPI", "1.0 T-GDI", "1.0 T-GDI MHEV", "1.4 CRDi", "i20 N 1.6 T-GDI"], "Tucson": ["1.6 T-GDI", "1.6 CRDi", "1.6 T-GDI Hybrid"], "Elantra": ["1.6 MPI", "1.6 CRDi"], "Accent Blue": ["1.6 CRDi", "1.4 CVVT"], "Santa Fe": ["2.2 CRDi", "1.6 T-GDI Hybrid"] } },
+            "Jaguar": { models: { "F-Type": ["2.0 Turbo", "5.0 V8 Supercharged"], "F-Pace": ["2.0 D", "2.0 P", "5.0 V8 SVR"], "XF": ["2.0 D", "2.0 P"] } },
+            "Jeep": { models: { "Renegade": ["1.0 T3", "1.3 T4", "1.6 Multijet"], "Compass": ["1.3 GSE", "1.5 e-Hybrid", "1.6 Multijet"], "Wrangler": ["2.0 Turbo", "4xe PHEV", "Rubicon 3.6 V6"] } },
+            "Kia": { models: { "Picanto": ["1.0 MPI", "1.2 MPI"], "Rio": ["1.2 DPI", "1.4 MPI", "1.0 T-GDI"], "Ceed": ["1.0 T-GDI", "1.4 MPI", "1.6 CRDi mHEV"], "Sportage": ["1.6 T-GDI", "1.6 CRDi", "1.6 Hybrid"], "Sorento": ["2.2 CRDi", "1.6 T-GDI Hybrid"], "EV6": ["58 kWh", "77.4 kWh", "GT 585hp"] } },
+            "Land Rover": { models: { "Range Rover Sport": ["3.0 SDV6", "P400e Hybrid", "5.0 V8 Supercharged", "P530 V8", "D300 MHEV"], "Range Rover": ["3.0 D300", "4.4 P530 V8", "PHEV P440e"], "Range Rover Evoque": ["2.0 TD4", "1.5 P160 PHEV", "2.0 D150"], "Defender": ["D250", "P400", "V8 P525"], "Discovery": ["2.0 SD4", "3.0 SDV6"] } },
+            "Maserati": { models: { "Ghibli": ["2.0 MHEV", "3.0 V6", "3.8 V8 Trofeo"], "Levante": ["2.0 MHEV", "3.0 V6", "3.8 V8 Trofeo"], "MC20": ["3.0 V6 Nettuno"] } },
+            "Mazda": { models: { "Mazda3": ["1.5 Skyactiv-G", "2.0 Skyactiv-X"], "CX-5": ["2.0 Skyactiv-G", "2.2 Skyactiv-D"], "MX-5": ["1.5 Skyactiv-G", "2.0 Skyactiv-G"] } },
+            "Mercedes-Benz": { models: { "A-Serisi": ["A 180 d", "A 200", "AMG A 35", "AMG A 45 S"], "C-Serisi": ["C 180", "C 200 d", "C 200 4MATIC", "AMG C 63 S E PERFORMANCE"], "E-Serisi": ["E 180", "E 220 d", "E 300 d", "E 300 e", "AMG E 63 S"], "S-Serisi": ["S 400 d", "S 500", "Maybach S 680"], "G-Serisi": ["G 400 d", "G 500", "AMG G 63"], "GLA": ["GLA 200", "GLA 180 d"], "GLC": ["GLC 220 d", "GLC 300"], "GLE": ["GLE 300 d", "GLE 450", "AMG GLE 53"] } },
+            "Mini": { models: { "Cooper": ["1.5 3 Silindir", "2.0 S", "John Cooper Works", "SE (Elektrikli)"], "Countryman": ["1.5 Cooper", "2.0 Cooper S"] } },
+            "Nissan": { models: { "Qashqai": ["1.2 DIG-T", "1.5 dCi", "1.6 dCi", "1.3 DIG-T MHEV", "e-POWER"], "Micra": ["1.0 IG-T", "1.2", "1.5 dCi"], "X-Trail": ["1.6 dCi", "1.5 VC-Turbo e-POWER"], "GT-R (R35)": ["3.8 V6 Twin-Turbo", "NISMO"] } },
+            "Opel": { models: { "Corsa": ["1.2 PureTech", "1.5 Dizel", "1.4 Twinport", "Corsa-e (Elektrikli)"], "Astra": ["1.4 Turbo", "1.6 CDTI", "1.2 PureTech", "1.5 BlueHDi", "1.6 PHEV"], "Mokka": ["1.2 PureTech", "Mokka-e"], "Insignia": ["1.6 CDTI", "1.5 Turbo", "2.0 CDTI"] } },
+            "Peugeot": { models: { "208": ["1.2 PureTech", "1.5 BlueHDi", "1.4 HDi", "e-208"], "2008": ["1.2 PureTech", "1.5 BlueHDi", "1.6 e-HDi"], "308": ["1.2 PureTech", "1.5 BlueHDi", "1.6 BlueHDi"], "3008": ["1.2 PureTech", "1.5 BlueHDi", "1.6 BlueHDi", "1.6 PHEV"], "408": ["1.2 PureTech", "1.6 PHEV"], "508": ["1.5 BlueHDi", "1.6 PureTech", "2.0 BlueHDi"] } },
+            "Porsche": { models: { "Panamera": ["Panamera 4", "4S", "4S E-Hybrid", "GTS", "Turbo S", "Turbo S E-Hybrid"], "Cayenne": ["Cayenne", "S", "E-Hybrid", "GTS", "Turbo", "Turbo GT"], "911": ["Carrera", "Carrera 4S", "Turbo S (992)", "GT3", "GT3 RS"], "Taycan": ["Taycan 4S", "GTS", "Turbo", "Turbo S", "Cross Turismo"], "Macan": ["Macan 2.0", "Macan T", "Macan S", "Macan GTS"] } },
+            "Renault": { models: { "Clio": ["1.0 SCe", "1.0 TCe", "1.2 Joy", "1.5 dCi", "0.9 TCe", "E-Tech Hybrid"], "Megane": ["1.3 TCe", "1.5 dCi", "1.5 Blue dCi", "1.6 16V", "E-Tech 100% Elektrikli"], "Symbol": ["1.2 16V", "1.5 dCi", "0.9 TCe"], "Captur": ["1.0 TCe", "1.3 TCe", "1.5 dCi"], "Taliant": ["1.0 SCe", "1.0 TCe X-Tronic"], "Kadjar": ["1.5 dCi", "1.3 TCe"] } },
+            "Seat": { models: { "Ibiza": ["1.0 EcoTSI", "1.0 MPI", "1.4 MPI"], "Leon": ["1.0 eTSI", "1.5 eTSI", "1.6 TDI", "1.4 TSI", "1.2 TSI"], "Arona": ["1.0 EcoTSI"], "Ateca": ["1.5 EcoTSI", "1.6 TDI"] } },
+            "Skoda": { models: { "Fabia": ["1.0 MPI", "1.0 TSI", "1.2 TSI"], "Octavia": ["1.0 TSI e-TEC", "1.5 TSI e-TEC", "1.6 TDI", "2.0 TDI RS"], "Superb": ["1.5 TSI", "1.6 TDI", "2.0 TDI", "2.0 TSI 280hp 4x4"], "Kamiq": ["1.0 TSI", "1.5 TSI"], "Kodiaq": ["1.5 TSI", "2.0 TDI", "2.0 TSI vRS"] } },
+            "Subaru": { models: { "XV": ["1.6i", "e-Boxer Hybrid"], "Forester": ["e-Boxer Hybrid", "2.0 XT"], "Impreza": ["1.5", "1.6", "2.0 WRX STi"] } },
+            "Suzuki": { models: { "Swift": ["1.2 Dualjet", "1.2 Hybrid"], "Vitara": ["1.4 Boosterjet Hybrid", "1.6 VVT"], "Jimny": ["1.5 AllGrip"] } },
+            "Tesla": { models: { "Model 3": ["Standard Range Plus", "Long Range Dual Motor", "Performance"], "Model Y": ["Arkadan İtişli (RWD)", "Long Range", "Performance"], "Model S": ["Plaid"], "Model X": ["Plaid"] } },
+            "Tofaş": { models: { "Şahin": ["1.4", "1.6", "1.6 i.e"], "Doğan": ["L", "SL", "SLX", "SLX 1.6 i.e"], "Kartal": ["SLX", "Kargo"] } },
+            "Toyota": { models: { "Corolla": ["2012 1.4 D-4D", "2012 1.6 Valvematic", "2012 1.33 Life", "1.4 D-4D (2013-2018)", "1.6 Valvematic (2013-2018)", "1.5 Dynamic Force", "1.8 Hybrid", "1.2T"], "Yaris": ["1.0 VVT-i", "1.33 VVT-i", "1.5 Hybrid", "GR Yaris 1.6 Turbo"], "C-HR": ["1.2T", "1.8 Hybrid", "2.0 Hybrid"], "Auris": ["1.33 Life", "1.6 Valvematic", "1.4 D-4D", "1.8 Hybrid"], "RAV4": ["2.0", "2.5 Hybrid"], "Supra": ["2.0 GR", "3.0 GR Turbo"], "Hilux": ["2.4 D-4D", "2.8 D-4D Invincible"] } },
+            "Volkswagen": { models: { "Polo": ["1.0 MPI", "1.0 TSI", "1.2 TSI", "1.4 TDI", "1.6 TDI", "GTI"], "Golf": ["1.0 eTSI", "1.4 TSI", "1.5 eTSI", "1.2 TSI", "1.6 TDI", "2.0 TDI", "GTI", "Golf R 2.0 TSI"], "Passat": ["1.4 TSI", "1.5 TSI", "1.6 TDI", "2.0 TDI", "2.0 TDI 4Motion"], "T-Roc": ["1.5 TSI", "R 2.0 TSI"], "Tiguan": ["1.4 TSI", "1.5 TSI", "2.0 TDI"], "Amarok": ["2.0 TDI", "3.0 V6 TDI"], "Transporter": ["2.0 TDI CtyV", "2.0 TDI LWB"], "Caddy": ["1.6 TDI", "2.0 TDI"] } },
+            "Volvo": { models: { "S60": ["B4 AWD", "B5 AWD", "T8 Recharge"], "S90": ["B5 AWD", "B6 AWD", "T8 Recharge PHEV", "D5 AWD"], "V90 Cross Country": ["B5 AWD", "B6 AWD", "D5 AWD"], "XC40": ["T3", "B4 AWD", "Recharge Single Motor", "Recharge Twin Motor"], "XC60": ["B4 AWD", "B5 AWD", "T8 Recharge"], "XC90": ["B5 AWD", "B6 AWD", "T8 Recharge PHEV", "D5 AWD"] } }
+        };
+        // DEVASA VERİTABANI SONU
+
+        let state = { brand: null, model: null, engine: null, currentList: [] };
+
+        document.addEventListener("DOMContentLoaded", () => {
+            state.currentList = Object.keys(carDatabase).sort();
+            renderGrid(state.currentList, 'brand');
+        });
+
+        function renderGrid(items, type) {
+            const grid = document.getElementById('grid-container');
+            grid.innerHTML = '';
+            
+            if(items.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400 font-bold">Aradığınız kriterde araç bulunamadı...</div>`;
+                return;
+            }
+
+            items.forEach(item => {
+                grid.innerHTML += `
+                    <div onclick="handleSelect('${item.replace(/'/g, "\\'")}', '${type}')" class="item-card bg-white border border-slate-200 rounded-xl p-3 text-center cursor-pointer font-bold text-slate-700 flex flex-col items-center justify-center min-h-[90px] text-sm md:text-base">
+                        ${type === 'brand' ? `<div class="w-8 h-8 mb-2 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100"><i class="fa-solid fa-car"></i></div>` : ''}
+                        <span class="${type === 'engine' ? 'text-xs md:text-sm' : ''}">${item}</span>
+                    </div>
+                `;
+            });
+        }
+
+        function handleSelect(item, type) {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.value = '';
+
+            if (type === 'brand') {
+                state.brand = item;
+                document.getElementById('bc-brand').innerText = item;
+                document.getElementById('bc-model-wrap').classList.remove('hidden');
+                document.getElementById('step-title').innerHTML = `<i class="fa-solid fa-car text-primary"></i> ${item} Modelleri`;
+                state.currentList = Object.keys(carDatabase[item].models).sort();
+                renderGrid(state.currentList, 'model');
+            } 
+            else if (type === 'model') {
+                state.model = item;
+                document.getElementById('bc-model').innerText = item;
+                document.getElementById('bc-engine-wrap').classList.remove('hidden');
+                document.getElementById('step-title').innerHTML = `<i class="fa-solid fa-gears text-primary"></i> Motor ve Paket Seçimi`;
+                state.currentList = carDatabase[state.brand].models[item];
+                renderGrid(state.currentList, 'engine');
+            } 
+            else if (type === 'engine') {
+                state.engine = item;
+                document.getElementById('selection-area').classList.add('hidden');
+                document.getElementById('diagnostic-area').classList.remove('hidden');
+                document.getElementById('final-car-name').innerText = `${state.brand} ${state.model} - ${state.engine}`;
+            }
+        }
+
+        function filterItems() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = state.currentList.filter(item => item.toLowerCase().includes(query));
+            
+            let type = 'brand';
+            if(state.brand && !state.model) type = 'model';
+            if(state.brand && state.model) type = 'engine';
+            
+            renderGrid(filtered, type);
+        }
+
+        function resetApp() {
+            state = { brand: null, model: null, engine: null, currentList: Object.keys(carDatabase).sort() };
+            document.getElementById('selection-area').classList.remove('hidden');
+            document.getElementById('diagnostic-area').classList.add('hidden');
+            document.getElementById('result-area').classList.add('hidden');
+            document.getElementById('bc-model-wrap').classList.add('hidden');
+            document.getElementById('bc-engine-wrap').classList.add('hidden');
+            document.getElementById('problemText').value = '';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('step-title').innerHTML = `<i class="fa-solid fa-magnifying-glass text-primary"></i> Marka Seçiniz`;
+            renderGrid(state.currentList, 'brand');
+        }
+
+        async function analyzeWithAI() {
+            const problem = document.getElementById('problemText').value.trim();
+            if (!problem) return alert("Lütfen arıza belirtilerini yazın.");
+
+            const btn = document.getElementById('ai-btn');
+            const resultArea = document.getElementById('result-area');
+            const responseDiv = document.getElementById('ai-response');
+            
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Gemini Analiz Ediyor...`;
+            btn.disabled = true;
+            resultArea.classList.remove('hidden');
+            responseDiv.innerHTML = `<div class="flex items-center gap-3 text-secondary font-bold text-lg animate-pulse"><i class="fa-solid fa-database"></i> Sentetik Zeka Veritabanı Taranıyor...</div>`;
+
+            // BURAYA GOOGLE AI STUDIO'DAN ALDIĞIN API ANAHTARINI GİRECEKSİN!
+            const API_KEY = "BURAYA_API_KEY_GELECEK"; 
+            const fullCar = `${state.brand} ${state.model} ${state.engine}`;
+            
+            const promptText = `Sen 'ustanburda.ai' uygulamasının baş ustasısın. 
+            Müşteri Aracı: ${fullCar}. Şikayet: ${problem}. 
+            Şu yapıya uygun, direkt HTML olarak yanıt ver: 
+            <h4 style="color:#0ea5e9; font-weight:bold; font-size: 1.1rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">1) Muhtemel Arıza Sebepleri</h4> (Bu modelin kronik sorunları)
+            <h4 style="color:#0ea5e9; font-weight:bold; font-size: 1.1rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-top:20px;">2) Çözüm Yolları ve Tamir Süreci</h4>
+            <h4 style="color:#0ea5e9; font-weight:bold; font-size: 1.1rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-top:20px;">3) Ortalama Türkiye Tamir Maliyeti (TL)</h4>
+            Listeleri <ul style="list-style-type: disc; margin-left: 20px; margin-top:10px;"> kullanarak yap.`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+                });
+                
+                const data = await response.json();
+                if(data.candidates) {
+                    responseDiv.innerHTML = data.candidates[0].content.parts[0].text;
+                } else {
+                    responseDiv.innerHTML = `<span class="text-red-500 font-bold">API Yanıt Vermedi. Key'i kontrol et.</span>`;
+                }
+            } catch (error) {
+                responseDiv.innerHTML = `<span class="text-red-500 font-bold">Bağlantı Hatası! Konsolu incele.</span>`;
+            } finally {
+                btn.innerHTML = `<i class="fa-solid fa-robot"></i> Yeni Arıza Tespiti Yap`;
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
